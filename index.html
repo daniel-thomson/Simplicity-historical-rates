@@ -21,7 +21,7 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>NZ Mortgage Rates vs OCR (2021–Present)</h1>
+    <h1>Simplicity floating vs bank mortgage rates (2021–Present)</h1>
     <p>RBNZ fixed-term weighted averages (B30), Simplicity floating, and the Official Cash Rate (OCR).</p>
     <div class="card">
       <div class="legend" id="legend"></div>
@@ -168,12 +168,31 @@
           path.setAttribute('points', pts.join(' '));
           path.setAttribute('fill','none');
           path.setAttribute('stroke', s.color);
+        if(s.label.includes('OCR')){ path.setAttribute('data-series','OCR'); }
           path.setAttribute('stroke-width', s.width ? s.width : 2);
           if(s.dash){ path.setAttribute('stroke-dasharray','6,4'); }
           lines.appendChild(path);
         }
       });
       svg.appendChild(lines);
+
+      // Add toggle control for OCR visibility
+      const ocrToggle = document.createElement('label');
+      ocrToggle.style.display = 'inline-flex';
+      ocrToggle.style.alignItems = 'center';
+      ocrToggle.style.gap = '6px';
+      ocrToggle.style.fontSize = '14px';
+      ocrToggle.style.cursor = 'pointer';
+      ocrToggle.innerHTML = '<input type="checkbox" id="ocrToggle" checked> Show OCR (RBNZ)';
+      legend.prepend(ocrToggle);
+
+      // Hook up toggle event
+      document.getElementById('ocrToggle').addEventListener('change', (e) => {
+        const visible = e.target.checked;
+        const ocrLines = svg.querySelectorAll('[data-series="OCR"]');
+        ocrLines.forEach(line => line.style.display = visible ? 'block' : 'none');
+      });
+
 // Legend
       const legend = document.getElementById('legend');
       legend.innerHTML = '';
