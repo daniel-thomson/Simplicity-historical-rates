@@ -1,78 +1,195 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NZ Mortgage Rates vs OCR</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NZ Mortgage Rates vs OCR — Static</title>
   <style>
     :root { --fg:#0f172a; --muted:#64748b; --grid:#e2e8f0; }
-    html,body { height:100%; margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial, 'Noto Sans'; color:var(--fg); }
-    .wrap { max-width: 1100px; margin: 32px auto; padding: 0 16px; }
-    h1 { font-size: clamp(22px, 4vw, 32px); margin: 0 0 8px; }
-    p  { color: var(--muted); margin: 0 0 16px; }
-    .card { border:1px solid var(--grid); border-radius: 14px; padding:16px; background:white; }
-    .chart { height: 520px; }
-    .footer { margin-top: 10px; font-size: 12px; color: var(--muted); }
-    a { color:#2563eb; text-decoration: none; }
+    html,body { height:100%; margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial; color:var(--fg); background:#fafafa; }
+    .wrap { max-width:1100px; margin:32px auto; padding:0 16px; }
+    h1 { font-size:clamp(22px,4vw,32px); margin:0 0 10px; }
+    p { color:var(--muted); margin:0 0 16px; }
+    .card { border:1px solid var(--grid); background:#fff; border-radius:14px; padding:16px; }
+    .legend { display:flex; flex-wrap:wrap; gap:10px; font-size:12px; margin-bottom:10px; }
+    .legend .key { display:flex; align-items:center; gap:6px; }
+    .swatch { width:18px; height:3px; background:#000; }
+    .dash { background:linear-gradient(90deg,#000 50%,rgba(0,0,0,0) 0); background-size:8px 3px; }
+    .chart { width:100%; height:520px; }
+    .footer { font-size:12px; color:var(--muted); margin-top:8px; }
   </style>
-  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
 <body>
   <div class="wrap">
-    <h1>Simplicity floating mortgage rates vs OCR (2021–Present)</h1>
-    <p>RBNZ fixed-term weighted averages (B30), Simplicity floating, and Official Cash Rate (OCR).</p>
+    <h1>NZ Mortgage Rates vs OCR (2021–Present)</h1>
+    <p>RBNZ fixed-term weighted averages (B30), Simplicity floating, and the Official Cash Rate (OCR). No external CDNs.</p>
     <div class="card">
-      <div id="chart" class="chart"></div>
-      <div id="status" class="footer">Loading data…</div>
+      <div class="legend" id="legend"></div>
+      <svg id="chart" class="chart" viewBox="0 0 1100 520" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Line chart"></svg>
+      <div class="footer">Data: <a href="https://www.rbnz.govt.nz/monetary-policy/official-cash-rate-decisions" target="_blank" rel="noopener">RBNZ official data</a>; Simplicity data from own records.</div>
     </div>
   </div>
-
   <script>
-    // very small CSV parser (no quoted commas needed for this dataset)
-    function parseCSV(text) {
+    // Lightweight CSV loader (no quotes/commas inside fields expected)
+    function parseCSV(text){
       const lines = text.trim().split(/\r?\n/);
-      const headers = lines.shift().split(',');
-      return lines.map(line => {
+      const headers = lines[0].split(',');
+      return lines.slice(1).map(line => {
         const cols = line.split(',');
-        const obj = {};
-        headers.forEach((h, i) => obj[h] = cols[i]);
-        return obj;
+        const row = {};
+        headers.forEach((h,i)=> row[h]=cols[i]);
+        return row;
       });
     }
-    function toNum(v){ const n = Number(v); return isNaN(n) ? null : n; }
+    function toNum(v){ const n=Number(v); return isNaN(n)?null:n; }
 
-    fetch('./data.csv?cachebust=' + Date.now())
-      .then(r => {
-        if(!r.ok) throw new Error('HTTP ' + r.status);
-        return r.text();
-      })
-      .then(text => {
-        const rows = parseCSV(text);
-        const dates = rows.map(r => r.Date);
-        const traces = [
-          { x: dates, y: rows.map(r => toNum(r['6_month'])), name: 'RBNZ 6 month', mode: 'lines' },
-          { x: dates, y: rows.map(r => toNum(r['1_year'])),  name: 'RBNZ 1 year',  mode: 'lines' },
-          { x: dates, y: rows.map(r => toNum(r['18_month'])),name: 'RBNZ 18 month',mode: 'lines' },
-          { x: dates, y: rows.map(r => toNum(r['2_year'])),  name: 'RBNZ 2 year',  mode: 'lines' },
-          { x: dates, y: rows.map(r => toNum(r['simplicity_floating_pct'])), name: 'Simplicity Floating', mode: 'lines', line: { dash: 'dash' } },
-          { x: dates, y: rows.map(r => toNum(r['OCR'])),  name: 'OCR (RBNZ)', mode: 'lines', line: { width: 4 } }
-        ];
-        const layout = {
-          margin: { t: 24, r: 16, b: 48, l: 56 },
-          xaxis: { title: 'Date' },
-          yaxis: { title: 'Interest Rate (%)', rangemode: 'tozero' },
-          legend: { orientation: 'h', y: -0.2 },
-        };
-        Plotly.newPlot('chart', traces, layout, { responsive: true, displayModeBar: true });
-        document.getElementById('status').textContent = 'Data: data.csv';
-      })
-      .catch(err => {
-        document.getElementById('status').textContent = 'Error loading data.csv: ' + err.message;
-        console.error(err);
+    async function load(){
+      const resp = await fetch('./data.csv', { cache: 'no-store' });
+      if(!resp.ok){ throw new Error('Failed to fetch data.csv: '+resp.status); }
+      const text = await resp.text();
+      const rows = parseCSV(text);
+      draw(rows);
+    }
+
+    function draw(rows){
+      const series = [
+        { key:'6_month', label:'RBNZ 6 month', color:'#f59e0b' },
+        { key:'1_year', label:'RBNZ 1 year', color:'#60a5fa' },
+        { key:'18_month', label:'RBNZ 18 month', color:'#10b981' },
+        { key:'2_year', label:'RBNZ 2 year', color:'#facc15' },
+        { key:'simplicity_floating_pct', label:'Simplicity Floating', color:'#111827', dash:true },
+        { key:'OCR', label:'OCR (RBNZ)', color:'#ef4444', width:3 }
+      ];
+      // Parse dates and values
+      const data = rows.map(r=>({
+        d: new Date(r.Date),
+        v: Object.fromEntries(series.map(s=>[s.key, toNum(r[s.key])]))
+      })).filter(r=>!isNaN(r.d.valueOf()));
+
+      // Scales
+      const W=1100,H=520, m={l:64,r:16,t:16,b:40};
+      const xMin = data[0].d, xMax = data[data.length-1].d;
+      const yVals = [];
+      data.forEach(r=>series.forEach(s=>{ const v=r.v[s.key]; if(v!=null) yVals.push(v); }));
+      const yMin = Math.min(0, Math.min.apply(null,yVals));
+      const yMax = Math.max.apply(null,yVals);
+
+      const x = (date)=>{
+        const t = (date - xMin)/(xMax - xMin);
+        return m.l + t*(W - m.l - m.r);
+      };
+      const y = (val)=>{
+        const t = (val - yMin)/(yMax - yMin);
+        return H - m.b - t*(H - m.t - m.b);
+      };
+
+      const svg = document.getElementById('chart');
+      while(svg.firstChild) svg.removeChild(svg.firstChild);
+
+      // Grid + axes
+      const grid = document.createElementNS('http://www.w3.org/2000/svg','g');
+      grid.setAttribute('stroke','#e2e8f0');
+      grid.setAttribute('stroke-width','1');
+
+      // y ticks
+      const yTicks = 6;
+      for(let i=0;i<=yTicks;i++){
+        const v = yMin + (i*(yMax - yMin))/yTicks;
+        const Y = y(v);
+        const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1', m.l);
+        line.setAttribute('x2', W - m.r);
+        line.setAttribute('y1', Y);
+        line.setAttribute('y2', Y);
+        grid.appendChild(line);
+        const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+        text.setAttribute('x', m.l - 8);
+        text.setAttribute('y', Y + 4);
+        text.setAttribute('text-anchor','end');
+        text.setAttribute('font-size','12');
+        text.setAttribute('fill','#64748b');
+        text.textContent = v.toFixed(1);
+        grid.appendChild(text);
+      }
+
+      // x ticks (quarterly)
+      const xGroup = document.createElementNS('http://www.w3.org/2000/svg','g');
+      xGroup.setAttribute('font-size','12');
+      xGroup.setAttribute('fill','#64748b');
+      const monthStep = 3;
+      let d0 = new Date(xMin.getFullYear(), xMin.getMonth(), 1);
+      d0.setMonth(d0.getMonth() + (monthStep - (d0.getMonth()%monthStep))%monthStep);
+      for(let d=new Date(d0); d<=xMax; d.setMonth(d.getMonth()+monthStep)){
+        const X = x(d);
+        const tick = document.createElementNS('http://www.w3.org/2000/svg','line');
+        tick.setAttribute('x1', X);
+        tick.setAttribute('x2', X);
+        tick.setAttribute('y1', H - m.b);
+        tick.setAttribute('y2', H - m.b + 6);
+        tick.setAttribute('stroke','#94a3b8');
+        svg.appendChild(tick);
+        const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+        label.setAttribute('x', X);
+        label.setAttribute('y', H - m.b + 20);
+        label.setAttribute('text-anchor','middle');
+        label.textContent = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+        xGroup.appendChild(label);
+      }
+
+      svg.appendChild(grid);
+      svg.appendChild(xGroup);
+
+      
+      // Lines (step charts)
+      const lines = document.createElementNS('http://www.w3.org/2000/svg','g');
+      series.forEach(s=>{
+        // Build step points: (x0,y0) -> (x1,y0) -> (x1,y1)
+        const pts = [];
+        let prev = null;
+        for (let i=0;i<data.length;i++){
+          const val = data[i].v[s.key];
+          if (val==null){ prev = null; continue; }
+          const X = x(data[i].d);
+          const Y = y(val);
+          if (prev==null){
+            // start of a new segment
+            pts.push(X+','+Y);
+            prev = {X, Y};
+          } else {
+            // horizontal to next X at previous Y
+            pts.push(X+','+prev.Y);
+            // vertical jump to current Y
+            pts.push(X+','+Y);
+            prev = {X, Y};
+          }
+        }
+        if (pts.length){
+          const path = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+          path.setAttribute('points', pts.join(' '));
+          path.setAttribute('fill','none');
+          path.setAttribute('stroke', s.color);
+          path.setAttribute('stroke-width', s.width ? s.width : 2);
+          if(s.dash){ path.setAttribute('stroke-dasharray','6,4'); }
+          lines.appendChild(path);
+        }
       });
+      svg.appendChild(lines);
+// Legend
+      const legend = document.getElementById('legend');
+      legend.innerHTML = '';
+      series.forEach(s=>{
+        const item = document.createElement('div'); item.className='key';
+        const sw = document.createElement('div'); sw.className='swatch'; sw.style.background=s.color; if(s.dash){ sw.classList.add('dash'); }
+        const lab = document.createElement('span'); lab.textContent = s.label;
+        item.appendChild(sw); item.appendChild(lab); legend.appendChild(item);
+      });
+    }
+
+    load().catch(err=>{
+      const el = document.getElementById('chart');
+      el.outerHTML = '<div style="color:#ef4444;padding:8px">Error: '+err.message+'</div>';
+      console.error(err);
+    });
   </script>
 </body>
 </html>
