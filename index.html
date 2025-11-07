@@ -21,7 +21,7 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>Simplicity floating vs bank mortgage rates (2021–Present)</h1>
+    <h1>NZ Mortgage Rates vs OCR (2021–Present)</h1>
     <p>RBNZ fixed-term weighted averages (B30), Simplicity floating, and the Official Cash Rate (OCR).</p>
     <div class="card">
       <div class="legend" id="legend"></div>
@@ -194,13 +194,23 @@
       });
 
 // Legend
-      const legend = document.getElementById('legend');
-      legend.innerHTML = '';
+      const legendEl = document.getElementById('legend');
+      legendEl.innerHTML = '';
       series.forEach(s=>{
         const item = document.createElement('div'); item.className='key';
         const sw = document.createElement('div'); sw.className='swatch'; sw.style.background=s.color; if(s.dash){ sw.classList.add('dash'); }
         const lab = document.createElement('span'); lab.textContent = s.label;
-        item.appendChild(sw); item.appendChild(lab); legend.appendChild(item);
+        item.appendChild(sw); item.appendChild(lab); legendEl.appendChild(item);
+      });
+      // OCR toggle (after legend built)
+      const ocrCtl = document.createElement('label');
+      ocrCtl.style.display='inline-flex'; ocrCtl.style.alignItems='center'; ocrCtl.style.gap='6px'; ocrCtl.style.fontSize='14px';
+      ocrCtl.innerHTML = '<input type="checkbox" id="ocrToggle" checked> Show OCR (RBNZ)';
+      legendEl.prepend(ocrCtl);
+      document.getElementById('ocrToggle').addEventListener('change', (e)=>{
+        const show = e.target.checked;
+        const ocrLines = svg.querySelectorAll('[data-series="OCR"]');
+        ocrLines.forEach(el => el.style.display = show ? 'block' : 'none');
       });
     }
 
