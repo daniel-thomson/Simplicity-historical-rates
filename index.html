@@ -15,7 +15,7 @@
     .legend .key { display:flex; align-items:center; gap:6px; }
     .swatch { width:18px; height:3px; background:#000; }
     .dash { background:linear-gradient(90deg,#000 50%,rgba(0,0,0,0) 0); background-size:8px 3px; }
-    .chart { width:100%; height:520px; }
+    .chart { width:100%; height:720px; }
     .footer { font-size:12px; color:var(--muted); margin-top:8px; }
   </style>
 </head>
@@ -25,7 +25,7 @@
     <p>RBNZ fixed-term weighted averages (B30), Simplicity floating, and the Official Cash Rate (OCR). No external CDNs.</p>
     <div class="card">
       <div class="legend" id="legend"></div>
-      <svg id="chart" class="chart" viewBox="0 0 1100 520" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Line chart"></svg>
+      <svg id="chart" class="chart" viewBox="0 0 1100 720" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Line chart"></svg>
       <div class="footer">Data: <a href="https://www.rbnz.govt.nz/monetary-policy/official-cash-rate-decisions" target="_blank" rel="noopener">RBNZ official data</a>; Simplicity data from own records.</div>
     </div>
   </div>
@@ -107,7 +107,7 @@
         text.setAttribute('y', Y + 4);
         text.setAttribute('text-anchor','end');
         text.setAttribute('font-size','12');
-        text.setAttribute('fill','#64748b');
+        text.setAttribute('fill','#1f2937');
         text.textContent = v.toFixed(1);
         grid.appendChild(text);
       }
